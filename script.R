@@ -2,7 +2,14 @@ library(MicrosoftML)
 library(MicrosoftR)
 library(xgboost)
 library(MLmetrics)
+library(e1071)
+library(caret)
+#cargamos fichero functions
+wd <- getwd()
 
+source(paste(wd, "/functions.r", sep = ""))
+
+#leemos dato
 train_source <- read.csv(file = "D:/Data/Mercedes Benz/train.csv")
 submission_core <- read.csv(file = "D:/Data/Mercedes Benz/test.csv")
 
@@ -61,34 +68,28 @@ for (f in features) {
     }
 }
 
-#construir la formula
-form <- "y ~"
 
 #refrescar las features supervivientes
 features <- names(train)
+#quitamos Y
+features <- features[-1]
 
-for (f in features) {
-    if (f != "y") {
-        form <- paste(form, f, "+")
-    }
-}
-
-form <- substr(form, 1, (nchar(form) - 2))
+#construir la formula
+form <- paste("y~", paste(features, collapse = "+"), sep = "")
 
 #entrenamiento con valores por defecto
 ft <- rxFastTrees(formula = form, data = train, type = "regression", verbose = 0)
 
-#puntuar
-scores <- rxPredict(ft, test, suffix = ".rxFastTrees",
-                      extraVarsToWrite = names(test))
-#sacar vectores de predicción 
-actual_y <- scores$y
-preds <- scores$Score.rxFastTrees
+grid <- NULL
 
-#puntuar R2
-r2 <- R2_Score(y_pred = preds, y_true = actual_y)
-#mostrar la puntuacion 
-cat('RxFastTrees R2 Score', r2)
+#fit_model(rxFastTrees, form, data = train)
+
+#puntuar
+scores <- rxPredict(ft, test, #suffix = ".rxFastTrees",
+                      extraVarsToWrite = names(test)
+                      )
+
+computeR2('FastTrees', actual_vector = scores$y, preds_vector = scores$Score)
 
 #rxDForest() 
 DForest_model <- rxDForest(formula = form,
@@ -104,14 +105,8 @@ DForest_model <- rxDForest(formula = form,
 
 scores <- rxPredict(DForest_model, test, #suffix = ".rxDForest",
                       extraVarsToWrite = names(test))
-#sacar vectores de predicción 
-actual_y <- scores$y
-preds <- scores$y_Pred
 
-#puntuar R2
-r2 <- R2_Score(y_pred = preds, y_true = actual_y)
-#mostrar la puntuacion 
-cat('rxDForest R2 Score: ', r2)
+computeR2('DForest', actual_vector = scores$y, preds_vector = scores$y_Pred)
 
 ################################################################################
 ## Boosted tree modeling
@@ -131,14 +126,8 @@ BoostedTree_model = rxBTrees(formula = form,
 
 scores <- rxPredict(BoostedTree_model, test, #suffix = ".rxBTrees",
                       extraVarsToWrite = names(test))
-#sacar vectores de predicción 
-actual_y <- scores$y
-preds <- scores$y_Pred
 
-#puntuar R2
-r2 <- R2_Score(y_pred = preds, y_true = actual_y)
-#mostrar la puntuacion 
-cat('rxBTree R2 Score: ', r2)
+computeR2('RxBoostedTrees', actual_vector = scores$y, preds_vector = scores$y_Pred)
 
 ################################################################################
 ## Decision Tree Modelling
@@ -156,14 +145,8 @@ DTree_model = rxDTree(formula = form,
 
 scores <- rxPredict(DTree_model, test, #suffix = ".rxDTree",
                       extraVarsToWrite = names(test))
-#sacar vectores de predicción 
-actual_y <- scores$y
-preds <- scores$y_Pred
 
-#puntuar R2
-r2 <- R2_Score(y_pred = preds, y_true = actual_y)
-#mostrar la puntuacion 
-cat('rxDTree R2 Score: ', r2)
+computeR2('rxDTree', actual_vector = scores$y, preds_vector = scores$y_Pred)
 
 ##XGBOOST
 #train_xgb_df <- data.frame(train)
