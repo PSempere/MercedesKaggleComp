@@ -82,7 +82,7 @@ ft <- rxFastTrees(formula = form, data = train, type = "regression", verbose = 0
 
 grid <- NULL
 
-#fit_model(rxFastTrees, form, data = train)
+fit_model_ft(form, data = train)
 
 #puntuar
 scores <- rxPredict(ft, test, #suffix = ".rxFastTrees",
